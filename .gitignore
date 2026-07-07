@@ -1,0 +1,15 @@
+# ── Secrets — this repo is PUBLIC, never commit these ──────────────────────
+client_secret*.json
+*.secret
+.env
+.env.*
+secrets/
+
+# ── OS / editor cruft ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*~
+
+# ── Python (build-standalone.py) ───────────────────────────────────────────
+__pycache__/
+*.pyc
