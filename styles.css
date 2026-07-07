@@ -1,0 +1,445 @@
+/* ============================================================================
+ * styles.css — Bio-Inspired Design Atlas
+ * ==========================================================================*/
+
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --ink: #1d2127;
+  --ink-soft: #5b626d;
+  --line: #e2e5ea;
+  --line-strong: #cfd4dc;
+  --accent: #2f6db5;
+  --accent-ink: #ffffff;
+  --shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 6px 18px rgba(16, 24, 40, 0.06);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+/* ---- Header ------------------------------------------------------------- */
+.bid-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.bid-header-main { max-width: 640px; }
+.bid-header h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+.bid-sub { margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; }
+
+.bid-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.bid-identity {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bid-identity input {
+  margin-top: 3px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  min-width: 150px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+}
+
+.bid-btn {
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+.bid-btn:hover { background: #f0f2f5; }
+.bid-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.bid-btn-primary:hover { background: #275c9b; }
+.bid-btn-ghost { color: var(--ink-soft); }
+.bid-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.bid-auth { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bid-auth-name { font-size: 13px; color: var(--ink-soft); }
+
+.bid-backend-note {
+  padding: 8px 28px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  background: #fbfbe8;
+  border-bottom: 1px solid #efeecb;
+}
+
+/* ---- Layout ------------------------------------------------------------- */
+.bid-layout {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.15fr) minmax(360px, 1fr);
+  gap: 20px;
+  padding: 20px 28px 40px;
+  align-items: start;
+}
+@media (max-width: 940px) {
+  .bid-layout { grid-template-columns: 1fr; }
+}
+
+.bid-map-pane {
+  position: sticky;
+  top: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+@media (max-width: 940px) {
+  .bid-map-pane { position: static; }
+}
+
+.bid-plot { width: 100%; }
+.bid-plot-svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* ---- Plot internals ----------------------------------------------------- */
+.bid-plot-frame { fill: #fcfcfd; stroke: var(--line-strong); stroke-width: 1; }
+.bid-plot-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 4 4; }
+.bid-cat-label {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.42;
+  pointer-events: none;
+  user-select: none;
+}
+.bid-axis-title { font-size: 12.5px; font-weight: 600; fill: var(--ink-soft); }
+.bid-axis-end { font-size: 11px; fill: var(--ink-soft); }
+
+.bid-dot {
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: r 0.1s;
+}
+.bid-dot:hover { stroke: var(--ink); stroke-width: 2; }
+.bid-dot:focus { outline: none; stroke: var(--ink); stroke-width: 2.5; }
+.bid-dot.is-selected { stroke: var(--ink); stroke-width: 3; }
+
+.bid-plot-tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: #1d2127;
+  color: #fff;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  max-width: 240px;
+  box-shadow: var(--shadow);
+}
+.bid-tip-meta { color: #b8bfca; font-size: 11px; }
+
+/* ---- Legend ------------------------------------------------------------- */
+.bid-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.bid-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  cursor: default;
+}
+.bid-legend-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+/* ---- Side pane / list --------------------------------------------------- */
+.bid-side-pane {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  min-height: 300px;
+}
+.bid-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.bid-list-head h2 { margin: 0; font-size: 16px; }
+.bid-list-count { color: var(--ink-soft); font-size: 13px; }
+.bid-filter {
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.bid-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.bid-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow); }
+.bid-card-title { font-weight: 600; font-size: 14.5px; }
+.bid-card-blurb { color: var(--ink-soft); font-size: 13px; margin-top: 3px; }
+.bid-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+}
+.bid-chip-soft {
+  background: #eef1f5;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.bid-chip-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+}
+
+/* ---- Detail ------------------------------------------------------------- */
+.bid-back {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13.5px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 10px;
+}
+.bid-detail-title { margin: 0 0 4px; font-size: 18px; }
+.bid-detail-fulltitle { font-size: 14.5px; font-weight: 600; margin: 0 0 6px; }
+.bid-detail-blurb { color: var(--ink-soft); font-size: 14px; margin: 0 0 10px; }
+.bid-detail-link { font-size: 13px; }
+
+.bid-position-box {
+  background: #f8f9fb;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 12px 0 6px;
+}
+.bid-position-box h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+.bid-tally-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.bid-tally-bar {
+  height: 8px;
+  border-radius: 4px;
+  min-width: 4px;
+}
+.bid-pos-readout { font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+
+/* ---- Comments ----------------------------------------------------------- */
+.bid-comments h3 { font-size: 15px; margin: 18px 0 8px; }
+.bid-comment {
+  border-left: 2px solid var(--line);
+  padding: 6px 0 2px 12px;
+  margin: 8px 0;
+}
+.bid-comment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.bid-comment-author { font-weight: 600; color: var(--ink); }
+.bid-comment-body { font-size: 14px; margin: 4px 0; white-space: pre-wrap; word-break: break-word; }
+.bid-comment-body.is-deleted { color: var(--ink-soft); font-style: italic; }
+.bid-comment-sg {
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: #f4f6f9;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 4px 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+}
+.bid-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+.bid-vote {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bid-vote button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink-soft);
+  padding: 0 2px;
+}
+.bid-vote button.is-on { color: var(--accent); }
+.bid-vote-score { min-width: 16px; text-align: center; font-weight: 600; }
+.bid-linkbtn {
+  border: none; background: none; color: var(--accent);
+  cursor: pointer; font-size: 12.5px; padding: 0;
+}
+.bid-linkbtn.is-danger { color: #b23b3b; }
+
+/* ---- Forms / classification widget ------------------------------------- */
+.bid-form { margin-top: 8px; }
+.bid-field { margin-bottom: 12px; }
+.bid-field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 4px; }
+.bid-field input[type="text"],
+.bid-field input[type="url"],
+.bid-field input[type="number"],
+.bid-field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+}
+.bid-field textarea { resize: vertical; min-height: 70px; }
+
+.bid-classify {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: #fafbfc;
+}
+.bid-slider-row { margin-bottom: 10px; }
+.bid-slider-row label { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; }
+.bid-slider-row .bid-slider-val { color: var(--ink-soft); font-weight: 500; }
+.bid-slider-row input[type="range"] { width: 100%; }
+.bid-slider-ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); }
+
+.bid-cat-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.bid-cat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+}
+.bid-cat-toggle input { display: none; }
+.bid-cat-toggle.is-on { border-color: currentColor; background: #fff; font-weight: 600; }
+
+.bid-form-actions { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.bid-error { color: #b23b3b; font-size: 13px; }
+.bid-hint { color: var(--ink-soft); font-size: 12px; }
+
+.bid-doi-row { display: flex; gap: 8px; align-items: stretch; }
+.bid-doi-row input { flex: 1; }
+.bid-doi-row .bid-btn { white-space: nowrap; }
+.bid-lookup-msg { margin-top: 8px; font-size: 13px; padding: 8px 10px; border-radius: var(--radius-sm); }
+.bid-lookup-info { background: #eef2f7; color: var(--ink-soft); }
+.bid-lookup-ok { background: #e9f6ee; color: #1f6b3b; border: 1px solid #cdead6; }
+.bid-lookup-error { background: #fdecec; color: #7a1f1f; border: 1px solid #f4caca; }
+.bid-found-sub { margin-top: 3px; font-size: 12px; opacity: 0.85; }
+
+.bid-toggle-classify {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--ink-soft); margin-bottom: 8px; cursor: pointer;
+}
+
+/* ---- Modal -------------------------------------------------------------- */
+.bid-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(16, 24, 40, 0.45);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 40px 16px; z-index: 50; overflow: auto;
+}
+.bid-modal {
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 560px;
+  padding: 22px 24px;
+}
+.bid-modal h2 { margin: 0 0 4px; font-size: 18px; }
+.bid-modal-sub { margin: 0 0 14px; color: var(--ink-soft); font-size: 13.5px; }
+.bid-modal-close {
+  float: right; border: none; background: none; font-size: 20px;
+  cursor: pointer; color: var(--ink-soft); line-height: 1;
+}
+
+.bid-empty { color: var(--ink-soft); font-size: 14px; padding: 20px 4px; }
+
+.bid-footer {
+  padding: 16px 28px 28px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  border-top: 1px solid var(--line);
+}
+.bid-footer code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; }

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bio-Inspired Design Atlas</title>
+    <meta
+      name="description"
+      content="A community atlas of bio-inspired robotics papers, classified and mapped by the Zhang–Ting–Moore (2026) taxonomy."
+    />
+    <!-- Bump ?v=N on EVERY asset below together when you change any CSS/JS,
+         so browsers never mix a new file with a stale cached one. -->
+    <link rel="stylesheet" href="styles.css?v=2" />
+    <script>
+      // Visible startup-error box: surfaces any script-load or boot failure
+      // (e.g. a browser blocking scripts on a double-clicked file:// page)
+      // instead of leaving a silently-blank plot.
+      (function () {
+        function show(msg) {
+          try {
+            var b = document.getElementById("bid-fatal");
+            if (!b) {
+              b = document.createElement("div");
+              b.id = "bid-fatal";
+              b.setAttribute(
+                "style",
+                "position:fixed;left:0;right:0;top:0;z-index:9999;background:#fdecec;color:#7a1f1f;border-bottom:1px solid #f4caca;padding:10px 14px;font:13px -apple-system,Segoe UI,Roboto,sans-serif"
+              );
+              (document.body || document.documentElement).appendChild(b);
+            }
+            b.textContent =
+              "Atlas could not start: " + msg +
+              "  —  Some browsers block scripts on double-clicked (file://) pages. Open it via a local server or the deployed site — see README, or use standalone.html.";
+          } catch (e) {}
+        }
+        window.addEventListener("error", function (e) {
+          var m = (e && e.message) ||
+            (e && e.target && e.target.src ? "failed to load " + e.target.src : "unknown error");
+          show(m);
+        }, true);
+        window.addEventListener("unhandledrejection", function (e) {
+          show((e && e.reason && e.reason.message) || "startup failed");
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="bid-header">
+      <div class="bid-header-main">
+        <h1>Bio-Inspired Design Atlas</h1>
+        <p class="bid-sub">
+          A community-curated map of bio-inspired robotics, using the taxonomy of
+          Zhang, Ting &amp; Moore (2026). Submit papers, discuss their
+          classification, and watch the map redraw from the community's input.
+        </p>
+      </div>
+      <div class="bid-header-actions">
+        <label class="bid-identity">
+          <span>Signed in as</span>
+          <input
+            id="bid-user"
+            type="text"
+            placeholder="your name"
+            autocomplete="off"
+            aria-label="Your display name"
+          />
+        </label>
+        <button id="bid-submit-btn" class="bid-btn bid-btn-primary">+ Submit a paper</button>
+        <button id="bid-reset-btn" class="bid-btn bid-btn-ghost" title="Restore the seed dataset">Reset demo</button>
+      </div>
+    </header>
+
+    <div id="bid-backend-note" class="bid-backend-note"></div>
+
+    <main class="bid-layout">
+      <section class="bid-map-pane" aria-label="Taxonomy map">
+        <div id="bid-plot" class="bid-plot"></div>
+        <div id="bid-legend" class="bid-legend"></div>
+      </section>
+
+      <section class="bid-side-pane" aria-label="Papers">
+        <div id="bid-side"></div>
+      </section>
+    </main>
+
+    <!-- Modal host -->
+    <div id="bid-modal-root"></div>
+
+    <footer class="bid-footer">
+      <span>
+        Prototype · data lives only in this browser. See
+        <code>README.md</code> for the Supabase + Google/ORCID deployment path.
+      </span>
+    </footer>
+
+    <script src="js/data.js?v=2"></script>
+    <script src="js/store.js?v=2"></script>
+    <script src="js/doi.js?v=2"></script>
+    <!-- SUPABASE:START (stripped from standalone.html — shared-backend only) -->
+    <script src="js/config.js?v=2"></script>
+    <script src="js/store.supabase.js?v=2"></script>
+    <!-- SUPABASE:END -->
+    <script src="js/plot.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
+  </body>
+</html>
