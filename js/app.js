@@ -710,9 +710,6 @@
     } else {
       authBox.appendChild(h("span", { class: "bid-hint", text: "Sign in to contribute:" }));
       authBox.appendChild(h("button", { class: "bid-btn", text: "Google", onclick: () => store.signIn("google") }));
-      // ORCID is a Supabase Custom OIDC provider; it must be named exactly
-      // "custom:orcid" in the dashboard (Auth → Providers → Custom).
-      authBox.appendChild(h("button", { class: "bid-btn", text: "ORCID", onclick: () => store.signIn("custom:orcid") }));
     }
   }
 
