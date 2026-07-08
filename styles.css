@@ -41,6 +41,9 @@ body {
 .bid-header-main { max-width: 640px; }
 .bid-header h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
 .bid-sub { margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; }
+.bid-header-links { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; }
+.bid-header-links a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.bid-header-links a:hover { text-decoration: underline; }
 
 .bid-header-actions {
   display: flex;
