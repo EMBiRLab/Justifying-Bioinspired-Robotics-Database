@@ -313,6 +313,75 @@
       return defer(true);
     },
 
+    // Edit a paper's own metadata. Only the original submitter (userId) may.
+    // fields.suggestion (optional): revises the submitter's original
+    // classification — object = upsert, null = remove, undefined = untouched.
+    async updatePaper(id, fields, userId) {
+      load();
+      const p = state.papers.find((x) => x.id === id);
+      if (!p || p.author !== userId) return defer(false);
+      ["doi", "title", "firstAuthor", "label", "link", "blurb"].forEach((k) => {
+        if (k in fields) p[k] = String(fields[k] || "").trim();
+      });
+      if ("year" in fields) p.year = fields.year ? Number(fields.year) : null;
+      if ("suggestion" in fields) {
+        const idx = state.suggestions.findIndex(
+          (s) => s.paperId === id && !s.commentId && s.author === userId
+        );
+        if (fields.suggestion === null) {
+          if (idx >= 0) state.suggestions.splice(idx, 1);
+        } else if (fields.suggestion) {
+          if (idx >= 0) {
+            const s = state.suggestions[idx];
+            s.x = clamp01(fields.suggestion.x);
+            s.y = clamp01(fields.suggestion.y);
+            s.categories = (fields.suggestion.categories || []).slice();
+          } else {
+            state.suggestions.push({
+              id: uid("sg"), paperId: id, commentId: null,
+              x: clamp01(fields.suggestion.x), y: clamp01(fields.suggestion.y),
+              categories: (fields.suggestion.categories || []).slice(),
+              author: userId, createdAt: nowISO(),
+            });
+          }
+        }
+      }
+      persist();
+      return defer(true);
+    },
+
+    // Edit a comment's own body. Only the author (userId) may.
+    // fields.suggestion (optional): revises the comment's attached
+    // classification — object = upsert, null = remove, undefined = untouched.
+    async updateComment(id, fields, userId) {
+      load();
+      const c = state.comments.find((x) => x.id === id);
+      if (!c || c.author !== userId || c.deleted) return defer(false);
+      if ("body" in fields) c.body = String(fields.body || "").trim();
+      if ("suggestion" in fields) {
+        const idx = state.suggestions.findIndex((s) => s.commentId === id);
+        if (fields.suggestion === null) {
+          if (idx >= 0) state.suggestions.splice(idx, 1);
+        } else if (fields.suggestion) {
+          if (idx >= 0) {
+            const s = state.suggestions[idx];
+            s.x = clamp01(fields.suggestion.x);
+            s.y = clamp01(fields.suggestion.y);
+            s.categories = (fields.suggestion.categories || []).slice();
+          } else {
+            state.suggestions.push({
+              id: uid("sg"), paperId: c.paperId, commentId: id,
+              x: clamp01(fields.suggestion.x), y: clamp01(fields.suggestion.y),
+              categories: (fields.suggestion.categories || []).slice(),
+              author: userId, createdAt: nowISO(),
+            });
+          }
+        }
+      }
+      persist();
+      return defer(true);
+    },
+
     async resetToSeed() {
       state = seedState();
       persist();

@@ -76,10 +76,11 @@
     if (store.supportsAuth) return id ? id.id : null;
     return getClientId();
   }
-  function canDelete(c) {
+  // True if the current user owns this paper/comment (may edit or delete it).
+  function ownsItem(item) {
     const id = authIdentity();
-    if (store.supportsAuth) return !!(id && c.authorId && c.authorId === id.id);
-    return !!(c.author && c.author === currentUser() && c.author !== "anonymous");
+    if (store.supportsAuth) return !!(id && item.authorId && item.authorId === id.id);
+    return !!(item.author && item.author === currentUser() && item.author !== "anonymous");
   }
   // Returns true if the user may write; otherwise reports via showErr and false.
   function requireAuth(showErr) {
@@ -293,6 +294,11 @@
         h("a", { href: linkHref, target: "_blank", rel: "noopener noreferrer", text: p.doi ? "doi.org/" + p.doi + " ↗" : "Open source ↗" }),
       ]));
     }
+    if (ownsItem(p)) {
+      els.side.appendChild(h("p", { style: "margin:4px 0 0" }, [
+        h("button", { class: "bid-linkbtn", text: "✎ Edit this submission", onclick: () => openEditPaperModal(p) }),
+      ]));
+    }
 
     // --- community position box ---
     const box = h("div", { class: "bid-position-box" });
@@ -363,10 +369,12 @@
         h("span", { text: "· " + fmtDate(c.createdAt) }),
       ]));
 
+      let bodyEl = null;
       if (c.deleted) {
         node.appendChild(h("div", { class: "bid-comment-body is-deleted", text: "[deleted]" }));
       } else {
-        node.appendChild(h("div", { class: "bid-comment-body", text: c.body }));
+        bodyEl = h("div", { class: "bid-comment-body", text: c.body });
+        node.appendChild(bodyEl);
         const sg = sgByComment[c.id];
         if (sg) {
           const sgEl = h("div", { class: "bid-comment-sg" }, [h("span", { text: "proposed classification:" })]);
@@ -378,7 +386,7 @@
         }
       }
 
-      // actions: vote + reply + delete
+      // actions: vote + reply + (edit/delete for your own)
       const score = netVotes(c);
       const myId = voterId();
       const myVote = myId ? (c.voters || {})[myId] || 0 : 0;
@@ -400,7 +408,62 @@
           replyHost.appendChild(buildCommentForm({ paperId, parentId: c.id, compact: true }));
         });
         actions.appendChild(replyBtn);
-        if (canDelete(c)) {
+        if (ownsItem(c)) {
+          // Inline edit: swap the body text for a textarea, plus an option to
+          // revise/attach/remove this comment's classification.
+          const editBtn = h("button", { class: "bid-linkbtn", text: "Edit" });
+          editBtn.addEventListener("click", () => {
+            if (!bodyEl || !bodyEl.parentNode) return;
+            const existingSg = sgByComment[c.id];
+            const sgChip = node.querySelector(".bid-comment-sg");
+            if (sgChip) sgChip.style.display = "none"; // hide stale chip while editing
+
+            const ta = h("textarea", { class: "bid-edit-textarea" });
+            ta.value = c.body;
+
+            let classifier = null;
+            const classifyHost = h("div", { style: "margin-top:8px" });
+            function ensureClassifier() {
+              if (!classifier) {
+                classifier = buildClassifier(existingSg
+                  ? { x: existingSg.x, y: existingSg.y, categories: existingSg.categories } : {});
+                classifyHost.appendChild(classifier.el);
+              }
+            }
+            const cb = h("input", { type: "checkbox" });
+            cb.checked = !!existingSg;
+            if (existingSg) ensureClassifier();
+            classifyHost.style.display = existingSg ? "block" : "none";
+            cb.addEventListener("change", () => {
+              if (cb.checked) { ensureClassifier(); classifyHost.style.display = "block"; }
+              else classifyHost.style.display = "none";
+            });
+            const toggle = h("label", { class: "bid-toggle-classify" }, [cb, document.createTextNode(" Include a classification (moves the paper on the map)")]);
+
+            const errEl = h("div", { class: "bid-error", style: "display:none" });
+            const saveBtn = h("button", { class: "bid-btn bid-btn-primary", text: "Save" });
+            const cancelBtn = h("button", { class: "bid-btn bid-btn-ghost", text: "Cancel", onclick: () => renderDetail() });
+            saveBtn.addEventListener("click", async () => {
+              const showE = (m) => { errEl.textContent = m; errEl.style.display = "block"; };
+              const body = ta.value.trim();
+              if (!body) return showE("Comment can't be empty.");
+              let suggestion = null; // null => remove any existing classification
+              if (cb.checked && classifier) {
+                const val = classifier.getValue();
+                if (!val.categories.length) return showE("Pick at least one category, or untick the classification box.");
+                suggestion = val;
+              }
+              saveBtn.disabled = true;
+              try {
+                await store.updateComment(c.id, { body: body, suggestion: suggestion, paperId: c.paperId }, currentUser());
+                await refresh();
+              } catch (e) { saveBtn.disabled = false; showE("Could not save."); }
+            });
+            const form = h("div", { class: "bid-edit-form" }, [ta, toggle, classifyHost, errEl, h("div", { class: "bid-form-actions" }, [saveBtn, cancelBtn])]);
+            bodyEl.parentNode.replaceChild(form, bodyEl);
+            ta.focus();
+          });
+          actions.appendChild(editBtn);
           actions.appendChild(h("button", { class: "bid-linkbtn is-danger", text: "Delete", onclick: async () => { await store.deleteComment(c.id, c.author); refresh(); } }));
         }
         node.appendChild(actions);
@@ -611,6 +674,106 @@
     clear(els.modalRoot);
     els.modalRoot.appendChild(backdrop);
     doiInput.focus();
+  }
+
+  // ---- edit-paper modal (owner only) -------------------------------------
+  async function openEditPaperModal(paper) {
+    // Find the submitter's original classification so it can be revised too.
+    const sgs = await store.getSuggestions(paper.id);
+    const mySg = sgs.find((s) => !s.commentId && ownsItem(s)) || null;
+    const classifier = buildClassifier(
+      mySg ? { x: mySg.x, y: mySg.y, categories: mySg.categories } : { x: 0.5, y: 0.5 }
+    );
+
+    const err = h("div", { class: "bid-error", style: "display:none" });
+    const doiInput = h("input", { type: "text", value: paper.doi || "" });
+    const lookupBtn = h("button", { class: "bid-btn", text: "Look up" });
+    const lookupMsg = h("div", { class: "bid-lookup-msg", style: "display:none" });
+    const title = h("input", { type: "text", value: paper.title || "" });
+    const firstAuthor = h("input", { type: "text", value: paper.firstAuthor || "" });
+    const year = h("input", { type: "number", min: "1800", max: "2100", value: paper.year || "" });
+    const blurb = h("textarea");
+    blurb.value = paper.blurb || "";
+    let lastLookup = null;
+
+    const close = () => clear(els.modalRoot);
+    function showMsg(kind, text) {
+      lookupMsg.className = "bid-lookup-msg bid-lookup-" + kind;
+      lookupMsg.style.display = "block";
+      lookupMsg.textContent = text;
+    }
+
+    async function doLookup() {
+      const norm = BID.doi.normalizeDoi(doiInput.value);
+      if (!norm) { showMsg("error", "That doesn't look like a DOI."); return; }
+      lookupBtn.disabled = true;
+      showMsg("info", "Looking up " + norm + " …");
+      try {
+        const r = await BID.doi.lookupDoi(norm);
+        lastLookup = { doi: r.doi, authorCount: r.authorCount };
+        if (r.title) title.value = r.title;
+        if (r.firstAuthor) firstAuthor.value = r.firstAuthor;
+        if (r.year) year.value = r.year;
+        showMsg("ok", "✓ Found: " + (r.title || "(untitled)"));
+      } catch (e) { showMsg("error", e.message || "Lookup failed."); }
+      finally { lookupBtn.disabled = false; }
+    }
+    lookupBtn.addEventListener("click", doLookup);
+    doiInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doLookup(); } });
+
+    const save = h("button", { class: "bid-btn bid-btn-primary", text: "Save changes" });
+    save.addEventListener("click", async () => {
+      const setErr = (m) => { err.textContent = m; err.style.display = "block"; };
+      const doi = BID.doi.normalizeDoi(doiInput.value);
+      if (!doi) return setErr("A valid DOI is required (e.g. 10.1234/abcd).");
+      const ttl = title.value.trim();
+      const fa = firstAuthor.value.trim();
+      if (!ttl) return setErr("Enter the paper title.");
+      if (!fa) return setErr("Enter the first author.");
+      // duplicate check, but allow keeping this paper's own DOI
+      if (store.findPaperByDoi) {
+        const existing = await store.findPaperByDoi(doi);
+        if (existing && existing.id !== paper.id) return setErr("“" + existing.label + "” already uses this DOI.");
+      }
+      const yr = year.value ? Number(year.value) : null;
+      const authorCount = lastLookup && lastLookup.doi === doi ? lastLookup.authorCount : null;
+      const label = BID.doi.makeLabel(fa, yr, authorCount);
+      const v = classifier.getValue();
+      if (!v.categories.length) return setErr("Pick at least one category for your classification.");
+      save.disabled = true;
+      try {
+        await store.updatePaper(paper.id, {
+          doi: doi, title: ttl, firstAuthor: fa, label: label, year: yr,
+          link: "https://doi.org/" + doi, blurb: blurb.value,
+          suggestion: { x: v.x, y: v.y, categories: v.categories },
+        }, currentUser());
+        close();
+        await refresh();
+        selectPaper(paper.id);
+      } catch (e) {
+        if (e && e.duplicate) { setErr("Another paper with this DOI already exists."); save.disabled = false; return; }
+        setErr("Could not save changes. Please try again.");
+        save.disabled = false;
+      }
+    });
+
+    const modal = h("div", { class: "bid-modal" }, [
+      h("button", { class: "bid-modal-close", text: "×", "aria-label": "Close", onclick: close }),
+      h("h2", { text: "Edit submission" }),
+      h("p", { class: "bid-modal-sub", text: "Update this paper's details and your own classification. Only you (the submitter) can edit this; others' classifications and the discussion are unaffected." }),
+      h("div", { class: "bid-field" }, [h("label", { text: "DOI *" }), h("div", { class: "bid-doi-row" }, [doiInput, lookupBtn]), lookupMsg]),
+      h("div", { class: "bid-field" }, [h("label", { text: "Title *" }), title]),
+      h("div", { class: "bid-field" }, [h("label", { text: "First author *" }), firstAuthor]),
+      h("div", { class: "bid-field" }, [h("label", { text: "Year" }), year]),
+      h("div", { class: "bid-field" }, [h("label", { text: "Short description" }), blurb]),
+      h("div", { class: "bid-field" }, [h("label", { text: "Your classification *" }), classifier.el]),
+      err,
+      h("div", { class: "bid-form-actions" }, [save, h("button", { class: "bid-btn bid-btn-ghost", text: "Cancel", onclick: close })]),
+    ]);
+    const backdrop = h("div", { class: "bid-modal-backdrop", onclick: (e) => { if (e.target === backdrop) close(); } }, [modal]);
+    clear(els.modalRoot);
+    els.modalRoot.appendChild(backdrop);
+    title.focus();
   }
 
   // ---- orchestration ------------------------------------------------------

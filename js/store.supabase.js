@@ -69,6 +69,7 @@
         link: paper.link || "",
         blurb: paper.blurb || "",
         author: paper.author_name || "member",
+        authorId: paper.author_id,
         createdAt: paper.created_at,
         seed: !!paper.seed,
         position: hasPos ? { x: pos.x, y: pos.y } : null,
@@ -181,6 +182,7 @@
           y: s.y,
           categories: s.categories || [],
           author: s.author_name || "member",
+          authorId: s.author_id,
           createdAt: s.created_at,
         }));
       },
@@ -263,6 +265,72 @@
         await client.from("comments")
           .update({ deleted: true, body: "" }).eq("id", commentId);
         await client.from("suggestions").delete().eq("comment_id", commentId);
+        return true;
+      },
+
+      // Edit own paper metadata. RLS ("papers update own") ensures a user can
+      // only touch their own row and can't reassign ownership.
+      // fields.suggestion revises the submitter's original classification:
+      // object = replace, null = remove, undefined = untouched.
+      async updatePaper(id, fields /*, userId */) {
+        const u = requireUser();
+        const patch = {};
+        if ("doi" in fields) patch.doi = String(fields.doi || "").trim() || null;
+        if ("title" in fields) patch.title = String(fields.title || "").trim();
+        if ("firstAuthor" in fields) patch.first_author = String(fields.firstAuthor || "").trim();
+        if ("label" in fields) patch.label = String(fields.label || "").trim();
+        if ("link" in fields) patch.link = String(fields.link || "").trim();
+        if ("blurb" in fields) patch.blurb = String(fields.blurb || "").trim();
+        if ("year" in fields) patch.year = fields.year ? Number(fields.year) : null;
+        if (Object.keys(patch).length) {
+          const { error } = await client.from("papers").update(patch).eq("id", id);
+          if (error) {
+            if (error.code === "23505") throw Object.assign(new Error("duplicate"), { duplicate: true });
+            throw error;
+          }
+        }
+        if ("suggestion" in fields) {
+          // The live RLS policies allow insert-own and delete-own on
+          // suggestions (no update policy), so revise = delete + re-insert.
+          await client.from("suggestions").delete()
+            .eq("paper_id", id).is("comment_id", null).eq("author_id", u.id);
+          if (fields.suggestion) {
+            const { error } = await client.from("suggestions").insert({
+              paper_id: id, comment_id: null,
+              x: fields.suggestion.x, y: fields.suggestion.y,
+              categories: fields.suggestion.categories || [],
+              author_id: u.id, author_name: u.name,
+            });
+            if (error) throw error;
+          }
+        }
+        return true;
+      },
+
+      // Edit own comment body. RLS ("comments update own") enforces ownership.
+      // fields.suggestion revises the comment's attached classification
+      // (object = replace, null = remove, undefined = untouched); the app
+      // passes fields.paperId alongside so the re-insert can reference it.
+      async updateComment(id, fields /*, userId */) {
+        const u = requireUser();
+        if ("body" in fields) {
+          const { error } = await client.from("comments")
+            .update({ body: String(fields.body || "").trim() }).eq("id", id);
+          if (error) throw error;
+        }
+        if ("suggestion" in fields) {
+          await client.from("suggestions").delete()
+            .eq("comment_id", id).eq("author_id", u.id);
+          if (fields.suggestion) {
+            const { error } = await client.from("suggestions").insert({
+              paper_id: fields.paperId, comment_id: id,
+              x: fields.suggestion.x, y: fields.suggestion.y,
+              categories: fields.suggestion.categories || [],
+              author_id: u.id, author_name: u.name,
+            });
+            if (error) throw error;
+          }
+        }
         return true;
       },
 
